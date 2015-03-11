@@ -1,0 +1,81 @@
+#! /usr/bin/env python
+
+import argparse
+import shutil
+import subprocess
+import os
+import time
+import resource
+import threading
+
+class RunCmd(threading.Thread):
+    def __init__(self, cmd, timeout):
+        threading.Thread.__init__(self)
+        self.cmd = cmd
+        self.timeout = timeout
+
+    def run(self):
+        self.p = subprocess.Popen(self.cmd)
+        self.p.wait()
+
+    def Run(self):
+        self.start()
+        self.join(self.timeout)
+
+        if self.is_alive():
+            self.p.kill()      #use self.p.kill() if process needs a kill -9
+            self.join()
+            return False
+        return True
+
+def main ():
+
+	parser = argparse.ArgumentParser("Evaluate a solution");
+	parser.add_argument("name", metavar="name", type=str, help="The name of the problem.")
+	parser.add_argument("no_tests", metavar="no_t", type=int, help="The number of tests available.")
+	parser.add_argument("--time-limit", metavar="time_limit", type=float, help="The time limit for the problem.",default=1e30)
+	parser.add_argument("--first-test", metavar="first_test", type=int, default=0)
+
+	args = parser.parse_args()
+
+	name = args.name
+	no_tests = args.no_tests
+	time_limit = args.time_limit
+	first_test = args.first_test
+
+	try:
+		shutil.move("./"+name+".out","./"+name+".out.bak");
+		shutil.move("./"+name+".in","./"+name+".in.bak");
+	except Exception, e:
+		pass
+	for i in range(first_test,first_test+no_tests):
+		shutil.copy("./tests/" + str(i) + "-" + name + ".in","./"+name+".in")
+		shutil.copy("./tests/" + str(i) + "-" + name + ".ok","./"+name+".ok")
+		time_exceeded = not RunCmd("./"+name,time_limit).Run()
+		info = resource.getrusage(resource.RUSAGE_CHILDREN)
+		time_elapsed = info[0]
+		f1 = open("./"+name+".out")
+		f2 = open("./"+name+".ok")
+
+		test_result = "TEST " + str(i-first_test+1) + ": "
+
+		if f1.read().strip() == f2.read().strip() and not time_exceeded:	
+			test_result += "OK!"
+		else:
+			if time_exceeded:
+				test_result += "Time Limit Exceeded!";
+			else:
+				test_result += "Wrong Answer!"
+		f1.close()
+		f2.close()
+		if not time_exceeded:
+			test_result += " Time: " + str((time_elapsed)*1000) + " msecs"
+		print test_result
+		os.remove("./"+name+".in")
+		os.remove("./"+name+".ok")
+		os.remove("./"+name+".out")
+
+	shutil.move("./"+name+".out.bak","./"+name+".out");
+	shutil.move("./"+name+".in.bak","./"+name+".in");
+if __name__ == "__main__":
+	main()
