@@ -23,7 +23,7 @@ class RunCmd(threading.Thread):
         self.join(self.timeout)
 
         if self.is_alive():
-            self.p.kill()      #use self.p.kill() if process needs a kill -9
+            self.p.kill()
             self.join()
             return False
         return True
@@ -31,8 +31,11 @@ class RunCmd(threading.Thread):
 def main ():
 
 	parser = argparse.ArgumentParser("Evaluate a solution");
-	parser.add_argument("name", metavar="name", type=str, help="The name of the problem.")
-	parser.add_argument("no_tests", metavar="no_t", type=int, help="The number of tests available.")
+	parser.add_argument("name", metavar="name", type=str, help="The name of the binary.")
+	parser.add_argument("no_tests", metavar="no_tests", type=int, help="The number of tests available.")
+	parser.add_argument("test_format", metavar="test_format", type=str, help="""The format of the test string (Python format string).
+																			Variables: name (name of the binary),
+																					   id (id of the test)""")
 	parser.add_argument("--time-limit", metavar="time_limit", type=float, help="The time limit for the problem.",default=1e30)
 	parser.add_argument("--first-test", metavar="first_test", type=int, default=0)
 
@@ -42,6 +45,7 @@ def main ():
 	no_tests = args.no_tests
 	time_limit = args.time_limit
 	first_test = args.first_test
+	test_format = args.test_format
 
 	try:
 		shutil.move("./"+name+".out","./"+name+".out.bak");
@@ -49,8 +53,9 @@ def main ():
 	except Exception, e:
 		pass
 	for i in range(first_test,first_test+no_tests):
-		shutil.copy("./tests/" + str(i) + "-" + name + ".in","./"+name+".in")
-		shutil.copy("./tests/" + str(i) + "-" + name + ".ok","./"+name+".ok")
+		test_name = test_format.format(name=name,id=i)
+		shutil.copy("./tests/" + test_name + ".in","./"+name+".in")
+		shutil.copy("./tests/" + test_name + ".ok","./"+name+".ok")
 		time_exceeded = not RunCmd("./"+name,time_limit).Run()
 		info = resource.getrusage(resource.RUSAGE_CHILDREN)
 		time_elapsed = info[0]
