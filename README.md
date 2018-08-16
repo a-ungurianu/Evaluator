@@ -19,8 +19,8 @@ Small python script I used to cycle through some tests in a folder and execute a
 
 This program assumes that all the tests are in a folder called 'tests' and that they are named as such:
 
-* no-name.in - for the input file
+* {no}-{name}.in - for the input file
 
-* no-name.ok - for the correct output file
+* {no}-{name}.ok - for the correct output file
 
 where `no` is the number of the file and name is the `name` of the binary
